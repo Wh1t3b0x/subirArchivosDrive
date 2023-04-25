@@ -1,6 +1,5 @@
 import json
 import boto3
-import re
 from monday import MondayClient
 from botocore.exceptions import ClientError
 
@@ -10,7 +9,7 @@ def get_secret():
     region_name = "us-east-1"
 
     # Create a Secrets Manager client
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     session = boto3.session.Session()
     client = session.client(service_name="secretsmanager", region_name=region_name)
 
@@ -24,16 +23,17 @@ def get_secret():
         raise e
 
     # Decrypts secret using the associated KMS key.
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     return json.loads(get_secret_value_response["SecretString"])
 
-#se asigna la key y los ids necesarios
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
+
+# se asigna la key y los ids necesarios
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 monday_api_key = get_secret()["monday_api"]
 mon = MondayClient(monday_api_key)
-board_id = "3549157032"
-column_id = "conectar_tableros60"
-
+column_id = {"reflejo70", "archivo6", "archivo4", "archivo20", "dup__of_orden_de_compra", "archivo2", "archivo1"}
+#reflejo70 = bases, archivo6 = sin ingresos, archivo4 = programa, archivo20 = CSV notas
+# dup__of_orden_de_compra = informe, archivo2 = diplomas, archivo1 = carta de recomendacion
 
 def syncchallenge(event: dict):
     try:
@@ -45,22 +45,59 @@ def syncchallenge(event: dict):
 
 
 def lambda_handler(event, context):
-    if challenge := syncchallenge(event):
-        return {
-            "isBase64Encoded": False,
-            "statusCode": 200,
-            "body": json.dumps(challenge),
-            "headers": {"content-type": "application/json"},
-        }
-
+    # if challenge := syncchallenge(event):
+    #     return {
+    #         "isBase64Encoded": False,
+    #         "statusCode": 200,
+    #         "body": json.dumps(challenge),
+    #         "headers": {"content-type": "application/json"},
+    #     }
+    
     evento = json.loads(event["body"])["event"]
-    #se toma el id del pulso y el texto en el encargado
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-    pulso_id = evento["pulseId"]
-    boardId = evento["boardId"]
-    columnas = mon.items.fetch_items_by_id(pulso_id)["data"]["items"][0]["column_values"]
 
-    encargado = None
+    pulso_id = evento["pulseId"]
+    columnas = mon.items.fetch_items_by_id(pulso_id)["data"]["items"][0]["column_values"]
+    print (columnas)
+
+    bases = None
+    sinIngresos = None
+    programa = None
+    csvNotas = None
+    informe = None
+    diplomas = None
+    cartaRecomendacion = None
+
     for columna in columnas:
-        if columna["id"] == column_id:
-            encargado = columna["text"]
+        if columna["id"] == "reflejo70":
+            bases = columna["url"]
+            print(bases)
+
+    for columna in columnas:
+        if columna["id"] == "archivo6":
+            sinIngresos = columna["url"]
+            print(sinIngresos)
+
+    for columna in columnas:
+        if columna["id"] == "archivo4":
+            programa = columna["url"]
+            print(programa)
+    
+    for columna in columnas:
+        if columna["id"] == "archivo20":
+            csvNotas = columna["url"]
+            print(csvNotas)
+    
+    for columna in columnas:
+        if columna["id"] == "dup__of_orden_de_compra":
+            informe = columna["url"]
+            print(informe)
+    
+    for columna in columnas:
+        if columna["id"] == "archivo2":
+            diplomas = columna["url"]
+            print(diplomas)
+    
+    for columna in columnas:
+        if columna["id"] == "archivo1":
+            cartaRecomendacion = columna["url"]
+            print(cartaRecomendacion)
