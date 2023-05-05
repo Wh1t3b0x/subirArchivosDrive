@@ -4,9 +4,9 @@ import shutil
 import os
 import os.path
 from monday import MondayClient
+from botocore.exceptions import ClientError
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
-from botocore.exceptions import ClientError
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
@@ -18,8 +18,6 @@ def get_secret():
     secret_name = "Monday_API"
     region_name = "us-east-1"
 
-    # Create a Secrets Manager client
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     session = boto3.session.Session()
     client = session.client(service_name="secretsmanager", region_name=region_name)
 
@@ -33,12 +31,8 @@ def get_secret():
         raise e
 
     # Decrypts secret using the associated KMS key.
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
     return json.loads(get_secret_value_response["SecretString"])
 
-
-# se asigna la key y los ids necesarios
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
 monday_api_key = get_secret()["monday_api"]
@@ -78,13 +72,21 @@ def lambda_handler(event, context):
     #     }
     
     evento = json.loads(event["body"])["event"]
-
+    
+    informe = None
+    
     pulso_id = evento["pulseId"]
     columnas = mon.items.fetch_items_by_id(pulso_id)["data"]["items"][0]["column_values"]
     print (columnas)
-
+    for columna in columnas:
+        if columna["id"] == "reflejo70":
+            informe == columna["text"]
+            print("La url es: "+ informe)
+    
+#-------------------------------------------------------------------
     # Crear el objeto de servicio de la API de Google Drive
     service = build('drive', 'v3', credentials=creds)
+    service = build("drive", "v3", credentials=creds)
     
     
     id_PADRE='1E-nU0ZiWrxqfUYSSkADFPst6hYGQQz8c'
@@ -106,20 +108,6 @@ def lambda_handler(event, context):
     else:
         print("No se encontró la carpeta '{}'".format(nombre_carpeta))
         exit()
-    
-    
-    curso=None
-
-    fila=mon.items.fetch_items_by_id(evento['pulseId'])
-    for elemento in fila['data']['items'][0]['column_values']:
-        if elemento['id']=='reflejo2':
-            curso=elemento['text']
-            break
-    if not curso:
-        print('No existe Curso')
-        exit()
-    
-    
     
     # # Especificar el nombre del archivo que se va a buscar
     # nombre_archivo='Asistencia '+curso
